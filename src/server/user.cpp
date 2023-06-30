@@ -1,5 +1,6 @@
 #include "../util.h"
 #include "channel.h"
+#include "user.h"
 #include <string>
 #include <bits/stdc++.h>
 
@@ -10,10 +11,10 @@ void User::send(string message) {
     return;
   }
 
-  auto users = Channel::get_by_name(channel)->get_members();
+  auto users = channel->get_members();
   for (auto &user : users ) {
-    if (user.id != id) {
-      util::send(user.get_socket(), message);
+    if (user != this) {
+      util::send(user->get_socket(), message);
     }
   }
 }
@@ -27,3 +28,7 @@ bool User::is_mute() { return this->muted; }
 int User::get_socket() {
   return socket;
 }
+
+bool User::operator==(const User &user) { return this->name == user.name; };
+
+bool User::operator!=(const User &user) { return this->name != user.name; };

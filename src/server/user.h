@@ -7,22 +7,20 @@
 
 using namespace std;
 
+class Channel;
+
 class User {
   private:
     bool muted;
     int socket;
-
-    static vector<User> users;
-    static int max_id;
   public:
-    int id;
     string name;
     thread thr;
     bool adm;
-    string channel;
-    char *ip;
+    Channel *channel;
+    string ip;
 
-    User(int socket, char *ip);
+    User(int socket, string ip);
 
     void send(string message);
     void mute();
@@ -31,8 +29,8 @@ class User {
 
     int get_socket();
 
-    static User *get_by_id(int id);
-    static int get_num_users();
+    bool operator==(const User& user);
+    bool operator!=(const User& user);
 };
 
 #endif

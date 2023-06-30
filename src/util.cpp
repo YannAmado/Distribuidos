@@ -33,3 +33,7 @@ string util::get_ip(const struct sockaddr *sa) {
 
   return string(ip);
 }
+
+bool util::starts_with(string str, string prefix) {
+  return str.rfind(prefix, 0) == 0;
+}

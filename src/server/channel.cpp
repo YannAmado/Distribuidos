@@ -1,10 +1,11 @@
 #include "channel.h"
 #include "../util.h"
+#include "user.h"
 
 using namespace std;
 
-vector<User> Channel::get_members() {
-  std::vector<User> members_vector;
+vector<User *> Channel::get_members() {
+  std::vector<User *> members_vector;
   members_vector.reserve(members.size());
 
   for (auto &kv : members) {
@@ -14,28 +15,17 @@ vector<User> Channel::get_members() {
   return members_vector;
 }
 
-User *Channel::get_admin() { return &members[admin_id]; }
+User *Channel::get_admin() { return admin; }
 
-Channel *Channel::get_by_name(string name) {
-  try {
-    return &channels.at(name);
-  } catch (...) {
-    return NULL;
-  }
-}
-
-Channel::Channel(string name, int admin_id) {
-  if (get_by_name(name)) {
-    throw "Channel already exists.";
-  }
-
+Channel::Channel(string name, User *admin) {
   name = name;
-  admin_id = admin_id;
+  admin = admin;
+  members[admin->id] = admin;
 }
 
 void Channel::broadcast(string message) {
   auto users = get_members();
   for (auto &user : users) {
-    util::send(user.get_socket(), message);
+    util::send(user->get_socket(), message);
   }
 }
