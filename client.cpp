@@ -18,6 +18,8 @@ using namespace std;
 bool exit_flag = false;
 thread t_send, t_recv;
 int client_socket;
+bool salvar_arquivo=false;
+mutex m;
 
 // enviar mensagem avisando que o ctrl+c esta desativado
 void blockCrtl_C(int signal) {
@@ -112,7 +114,9 @@ void send_message(int client_socket) {
     cout << "Voce: ";
     server_message = NULL;
     block = NULL;
+    m.lock();
     int res = scanf(" %m[^\n\r]", &server_message);
+    m.unlock();
 
     // para sair com ctrl+d
     if (res == -1) {
@@ -130,6 +134,10 @@ void send_message(int client_socket) {
       replace_char(server_message, '\0', '\n');
       memcpy(file_path, &server_message[6], MAX_STR);
       send_file(client_socket, file_path);
+    }
+    else if(strncmp(server_message, "/salvar", 7) == 0){
+      salvar_arquivo=true;
+      send(client_socket, "/salvar", 7, 0);
     }
     else {
       int message_size = 0;
@@ -198,11 +206,10 @@ void recv_message(int client_socket) {
     }
     
     else if (strcmp(name, "#FILE") == 0) {
+      m.lock();
       char save_file;
       int c;
-      cout << "Deseja salvar o arquivo enviado? [s/n]: ";
-      cin >> save_file;
-      if (save_file == 's'){
+      if (salvar_arquivo == true){
         char file_path[MAX_STR];
         cout << "digite o nome do arquivo: ";
 
@@ -212,13 +219,14 @@ void recv_message(int client_socket) {
         if (fp == NULL)
           cout << "erro ao salvar o arquivo" << endl;
         
-        for(int i = 0; i < sizeof(str); i++)
-          fputc(str[i], fp);
-        
+        for(int i = 1; str[i] != '\0'; i++){
+          fputc(str[i-1], fp);
+        }
         fclose(fp);
         cout << "arquivo salvo com sucesso" << endl;
+        salvar_arquivo = false;
       }
-
+      m.unlock();
     }
     else if (strcmp(name, "#NULL") != 0)
       cout << name << ": " << str << endl;

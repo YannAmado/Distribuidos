@@ -332,7 +332,7 @@ void configura_cliente(int client_socket, int id) {
         file_message[j] = str[i];
 
       // enviando a mensagem que um usuario enviou um arquivo
-      string message = string(name) + string(" - Enviou um arquivo!");
+      string message = string(name) + string(" - Enviou um arquivo! Digite /salvar para salvar o arquivo");
       broadcast_message_str("#NULL", id, channel_name, name);
       broadcast_message(id, id, channel_name, name);
       broadcast_message_str(message, id, channel_name, name);
@@ -342,6 +342,9 @@ void configura_cliente(int client_socket, int id) {
       broadcast_message(id, id, channel_name, name);
       broadcast_message_str(file_message, id, channel_name, name);
       terminal_compartilhado(id_char + message);
+
+    }
+    else if (strncmp(str, "/salvar", 7) == 0){
 
     }
     // para enviar mensagens normalmente
