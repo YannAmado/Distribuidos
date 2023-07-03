@@ -15,7 +15,6 @@
 
 using namespace std;
 
-#define QUIT_CMD "/quit"
 #define PING_CMD "/ping"
 #define KICK_CMD "/kick"
 #define MUTE_CMD "/mute"
@@ -26,11 +25,9 @@ class Server {
 private:
   /** Send a direct message to a user */
   void dm(User *target, string message);
-  void send_dm(int num, int target_id);
-  void set_client_name(int id);
   void listen_client(User *user);
-  bool is_client_adm(int client_id);
   void disconnect(User *user);
+  void close_channel(Channel *channel);
   void log(string message);
 
 public:

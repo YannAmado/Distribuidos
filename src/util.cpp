@@ -1,6 +1,7 @@
 #include "util.h"
 #include "string.h"
 #include <arpa/inet.h>
+#include <regex>
 
 void util::send(int socket, string message) {
   char message_bytes[BYTES_PER_MSG] = {'\0'};
@@ -27,7 +28,6 @@ string util::get_ip(const struct sockaddr *sa) {
       break;
 
     default:
-      strncpy(ip, "Unknown AF", 100);
       return NULL;
   }
 
@@ -36,4 +36,9 @@ string util::get_ip(const struct sockaddr *sa) {
 
 bool util::starts_with(string str, string prefix) {
   return str.rfind(prefix, 0) == 0;
+}
+
+bool util::is_name_valid(string name) {
+  regex re("^[a-zA-Z][a-zA-Z0-9]+$");
+  return name.size() <= MAX_CHAR_NAME && regex_match(name, re);
 }
