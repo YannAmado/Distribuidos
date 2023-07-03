@@ -40,12 +40,39 @@ void terminal_compartilhado(string str, bool endLine = true) {
     cout << endl;
 }
 
+
 bool get_mute(char username[]) {
   for (int i = 0; i < MAX_CHANNEL; i++) {
     if (strcmp(mute[i], username) == 0)
       return true;
   }
   return false;
+}
+
+void broadcast_file(char* file_path, int sender_id, char sender_channel[],
+                           char name[]){
+  int n;
+  FILE* fp;
+  char buffer[MAX_STR];
+
+  fp = fopen(file_path, "w");
+  if(fp == NULL){
+    cout << "Erro ao ler o arquivo" << endl;
+    return;
+  }
+
+  for (int i = 0; i < clients.size(); i++) {
+    int helper = (clients[i].channel.compare(sender_channel));
+
+    if (clients[i].id != sender_id && helper == 0 && get_mute(name) != true)
+          n = recv(clients[i].socket, buffer, MAX_STR, 0);
+          if(n <= 0){
+            break;
+            return;
+          }
+          fprintf(fp, "%s", buffer);
+          bzero(buffer, MAX_STR);
+  }
 }
 
 // Manda uma string para todos os usuarios
@@ -91,6 +118,7 @@ void broadcast_message_unico_usuario(int num, int sender_id) {
       send(clients[i].socket, &num, sizeof(num), 0);
   }
 }
+
 
 void end_connection(int id) {
   for (int i = 0; i < clients.size(); i++) {
@@ -216,6 +244,8 @@ void configura_cliente(int client_socket, int id) {
       return;
 
     // sair do chat
+    cout << str << endl;
+
     if ((strcmp(str, "/quit") == 0) || (int)str[0] == 0) {
       string message = string(name) + string(" - saiu do chat!");
 
@@ -295,6 +325,25 @@ void configura_cliente(int client_socket, int id) {
       }
     }
 
+    // para enviar arquivos
+    else if (strncmp(str, "/file", 5) == 0){
+      char file_message[MAX_STR] = {'\0'};
+      for (int i = 6, j = 0; i < strlen(str); i++, j++)
+        file_message[j] = str[i];
+
+      // enviando a mensagem que um usuario enviou um arquivo
+      string message = string(name) + string(" - Enviou um arquivo!");
+      broadcast_message_str("#NULL", id, channel_name, name);
+      broadcast_message(id, id, channel_name, name);
+      broadcast_message_str(message, id, channel_name, name);
+
+      // enviando o conteudo do arquivo
+      broadcast_message_str("#FILE", id, channel_name, name);
+      broadcast_message(id, id, channel_name, name);
+      broadcast_message_str(file_message, id, channel_name, name);
+      terminal_compartilhado(id_char + message);
+
+    }
     // para enviar mensagens normalmente
     else {
       broadcast_message_str(string(name), id, channel_name, name);
@@ -333,7 +382,7 @@ int main() {
   if (server_socket == -1) {
     cout << "Erro: server_socket, reinicie o servidor" << endl;
     return EXIT_FAILURE;
-  }
+  } 
 
   struct sockaddr_in server;
   server.sin_family = AF_INET;

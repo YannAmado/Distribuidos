@@ -49,6 +49,61 @@ char *create_block(char *msg, int current_block) {
   return msg_block;
 }
 
+char* read_file(char* file_path){
+    FILE* fp;
+    char* message = (char*) malloc(MAX_STR * sizeof(char));;
+    char c;
+ #
+    // Opening file in reading mode
+    fp = fopen(file_path, "r");
+ 
+    if (NULL == fp) {
+        printf("file can't be opened \n");
+    }
+ 
+    // Printing what is written in file
+    // character by character using loop.
+    int i = 0;
+    do {
+        c = fgetc(fp);
+        message[i] = c;
+        i++;
+        // Checking if character is not EOF.
+        // If it is EOF stop reading.
+    } while (c != EOF);
+    message[i] = '\0';
+    // Closing the file
+    fclose(fp);
+    return message;
+}
+
+// enviar o conteudo do arquivo
+void send_file(int client_socket, char* file_path){
+  char* file_message;
+  char message_to_send[MAX_STR];
+  char temp[] = "/file ";
+
+  for(int i = 0; i < sizeof(temp); i++){
+    message_to_send[i] = temp[i];
+  }
+  file_message = read_file(file_path);
+  int i = sizeof(temp)-1;
+  int j = 0;
+
+  for(; file_message[j] != '\0'; i++, j++)
+    message_to_send[i] = file_message[j];
+  message_to_send[i] = '\0';
+  send(client_socket, message_to_send, sizeof(message_to_send), 0);
+}
+
+void replace_char(char* str, char char_to_replace, char char_to_be_replaced){
+  for(int i = 0; str[i] != '\0'; i++){
+    if(str[i] == char_to_be_replaced)
+      str[i] = char_to_replace;
+      return;
+  }
+}
+
 // enviar mensagens
 void send_message(int client_socket) {
   char *server_message = NULL;
@@ -62,12 +117,21 @@ void send_message(int client_socket) {
     // para sair com ctrl+d
     if (res == -1) {
       cout << "Saindo..." << endl;
-      send(client_socket, "/quit", 5, 0);
+      send(client_socket, "/quit", 6, 0);
       exit_flag = true;
       t_recv.detach();
       close(client_socket);
       return;
-    } else {
+    } 
+
+    // para enviar o conteudo do arquivo
+    else if(strncmp(server_message, "/file", 5) == 0){
+      char file_path[MAX_STR];
+      replace_char(server_message, '\0', '\n');
+      memcpy(file_path, &server_message[6], MAX_STR);
+      send_file(client_socket, file_path);
+    }
+    else {
       int message_size = 0;
       int n_blocks = 0;
 
@@ -100,6 +164,12 @@ void send_message(int client_socket) {
   }
 }
 
+void flush_buffer(){
+  int c;
+  while ((c = getchar()) != '\n' && c != EOF) { }
+  return;
+}
+
 // recber as mensagens
 void recv_message(int client_socket) {
   while (1) {
@@ -126,16 +196,43 @@ void recv_message(int client_socket) {
       close(client_socket);
       exit(0);
     }
+    
+    else if (strcmp(name, "#FILE") == 0) {
+      char save_file;
+      int c;
+      cout << "Deseja salvar o arquivo enviado? [s/n]: ";
+      cin >> save_file;
+      if (save_file == 's'){
+        char file_path[MAX_STR];
+        cout << "digite o nome do arquivo: ";
 
-    if (strcmp(name, "#NULL") != 0)
+        cin >> file_path;
+        FILE* fp = fopen(file_path, "w");
+        
+        if (fp == NULL)
+          cout << "erro ao salvar o arquivo" << endl;
+        
+        for(int i = 0; i < sizeof(str); i++)
+          fputc(str[i], fp);
+        
+        fclose(fp);
+        cout << "arquivo salvo com sucesso" << endl;
+      }
+
+    }
+    else if (strcmp(name, "#NULL") != 0)
       cout << name << ": " << str << endl;
     else
       cout << str << endl;
 
     cout << "Voce: ";
     fflush(stdout);
+
+
+
   }
 }
+
 
 int main() {
   char username[MAX_STR] = {'\0'};
