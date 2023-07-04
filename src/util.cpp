@@ -3,17 +3,25 @@
 #include <algorithm>
 #include <arpa/inet.h>
 #include <cctype>
+#include <cstdlib>
 #include <regex>
+#include <stdexcept>
+#include <system_error>
+
+using namespace std;
+
+void util::send_without_filtering(int socket, string message) {
+  char message_bytes[BYTES_PER_MSG] = {'\0'};
+  strcpy(message_bytes, message.c_str());
+  ::send(socket, message_bytes, sizeof(message_bytes), 0);
+}
 
 void util::send(int socket, string message) {
   // remove invalid characters
   message.erase(remove_if(message.begin(), message.end(),
                           [](char ch) { return !isascii(ch) || iscntrl(ch); }),
                 message.end());
-
-  char message_bytes[BYTES_PER_MSG] = {'\0'};
-  strcpy(message_bytes, message.c_str());
-  ::send(socket, message_bytes, sizeof(message_bytes), 0);
+  send_without_filtering(socket, message);
 }
 
 string util::recv(int socket) {
@@ -63,8 +71,57 @@ string util::get_cmd_target(string message, string cmd) {
 
 void util::SignalManager::signalHandler(int signal) { signalHandlerFn(signal); }
 
-void util::SignalManager::init(std::function<void(int)> fn) {
+void util::SignalManager::init(function<void(int)> fn) {
   signalHandlerFn = fn;
   signal(SIGINT, SignalManager::signalHandler);
   signal(SIGQUIT, SignalManager::signalHandler);
+}
+
+string parse_tilde_in_filepath(string filepath) {
+  if (util::starts_with(filepath, "~/")) {
+    return filepath.replace(0, 1, string(getenv("HOME")));
+  }
+
+  return filepath;
+}
+
+string util::fread(string filepath) {
+  filepath = parse_tilde_in_filepath(filepath);
+  FILE *file = ::fopen(filepath.c_str(), "r");
+
+  if (!file) {
+    throw system_error();
+  }
+
+  // get file size
+  fseek(file, 0, SEEK_END);
+  size_t size = ftell(file);
+
+  // read file
+  char *contents_char = new char[size];
+  rewind(file);
+  fread(contents_char, sizeof(char), size, file);
+
+  // convert to string
+  string contents(contents_char);
+
+  // cleanup
+  delete[] contents_char;
+  fclose(file);
+
+  return contents;
+}
+
+bool util::fwrite(string filepath, string contents) {
+  parse_tilde_in_filepath(filepath);
+  FILE *file = ::fopen(filepath.c_str(), "w");
+
+  if (!file) {
+    throw system_error();
+  }
+
+  unsigned int n_written = fwrite(contents.c_str(), sizeof(char), contents.size(), file);
+  fclose(file);
+
+  return n_written == contents.size();
 }

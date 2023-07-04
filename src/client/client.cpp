@@ -52,13 +52,31 @@ void Client::send_message_handler() {
 
     if (!cin || cin.eof() || cin.bad()) {
       send(QUIT_CMD);
-      continue;
-    }
+    } else if (util::starts_with(message, FILE_CMD)) {
+      string filepath = util::get_cmd_target(message, FILE_CMD);
+      string contents;
 
-    vector<string> message_chunks = split_chunks(message);
+      cout << SERVER_PROMPT << "Uploading file '" << filepath
+           << "' to server..." << endl;
 
-    for (string &chunk : message_chunks) {
-      send(chunk);
+      try {
+        contents = util::fread(filepath);
+      } catch (...) {
+        cout << SERVER_PROMPT << "File doesn't exist or is invalid." << endl;
+        continue;
+      }
+
+      cout << SERVER_PROMPT << "'" << filepath << "' has "
+           << to_string(contents.size()) << " bytes." << endl;
+
+      util::send_without_filtering(server_socket,
+                                   (string)FILE_CMD + " " + contents);
+    } else {
+      vector<string> message_chunks = split_chunks(message);
+
+      for (string &chunk : message_chunks) {
+        send(chunk);
+      }
     }
   }
 }
@@ -79,8 +97,7 @@ void Client::recv_message_handler() {
       string cmd = recv(), message = recv();
       cout << SERVER_PROMPT << message << endl;
 
-      if (cmd == JOIN_CMD) {
-      } else if (cmd == QUIT_CMD) {
+      if (cmd == QUIT_CMD) {
         do_teardown();
       }
     } else if (sig == SIG_KICK) {
@@ -89,6 +106,35 @@ void Client::recv_message_handler() {
       cout << SERVER_PROMPT << "Server is shutting down." << endl;
       cout << SERVER_PROMPT << "Quitting..." << endl;
       do_teardown();
+    } else if (sig == SIG_FILE) {
+      string sender = recv(), contents = recv();
+      string filepath = string(getenv("HOME")) + "/Downloads/" + sender + "-" +
+                        to_string(time(0)) + ".txt";
+
+      cout << SERVER_PROMPT << sender << " sent a file with "
+           << to_string(contents.size()) << " bytes. Downloading it to '"
+           << filepath << "'..." << endl;
+
+      bool downloaded_all = false;
+
+      try {
+        downloaded_all = util::fwrite(filepath, contents);
+      } catch (...) {
+        cout << SERVER_PROMPT
+             << "There was an error, couldn't download file to '" << filepath
+             << "'." << endl;
+        continue;
+      }
+
+      if (!downloaded_all) {
+        cout << SERVER_PROMPT
+             << "There was an error, couldn't download the whole file to '"
+             << filepath << "'." << endl;
+        continue;
+      }
+
+      cout << SERVER_PROMPT << "File successfully downloaded to '" << filepath
+           << "'." << endl;
     }
 
     cout << USER_PROMPT;
@@ -138,7 +184,7 @@ void Client::launch() {
       cout << SERVER_PROMPT << "Invalid command." << endl;
       server_connection = INVALID;
     }
-  } while(server_connection == INVALID);
+  } while (server_connection == INVALID);
 
   thread thr_send(&Client::send_message_handler, this);
   thread thr_recv(&Client::recv_message_handler, this);
@@ -165,7 +211,8 @@ void Client::do_teardown() {
 }
 
 void Client::warn_teardown() {
-  cout << "\n" << SERVER_PROMPT
+  cout << "\n"
+       << SERVER_PROMPT
        << "Ctrl+C is deactivated. Please press Ctrl+D or send '" << QUIT_CMD
        << "' to exit safely" << endl;
 }

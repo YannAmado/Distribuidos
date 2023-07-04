@@ -19,7 +19,6 @@ private:
   string name;
 
 public:
-
   Channel(string name, User *admin);
 
   vector<User *> get_members();

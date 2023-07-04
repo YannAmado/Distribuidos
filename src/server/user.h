@@ -14,6 +14,7 @@ private:
   bool muted;
   int socket;
   string name;
+  void send(string signal, string message);
 
 public:
   thread thr;
@@ -23,6 +24,7 @@ public:
   User(int socket, string ip);
 
   void send(string message);
+  void send_file(string contents);
   void mute();
   void unmute();
   bool is_mute();

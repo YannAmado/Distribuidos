@@ -5,6 +5,7 @@
 
 #include <arpa/inet.h>
 #include <bits/stdc++.h>
+#include <bits/types/FILE.h>
 #include <errno.h>
 #include <mutex>
 #include <netinet/in.h>
@@ -16,11 +17,6 @@
 #include <unistd.h>
 
 using namespace std;
-
-unordered_map<string, Channel *> channels;
-unordered_map<string, User *> users;
-vector<User *> connecting_users;
-mutex log_mtx, users_mtx, channels_mtx;
 
 void Server::log(string message) {
   lock_guard<mutex> guard(log_mtx);
@@ -65,7 +61,8 @@ User *user_cmd_target(string message, string cmd, Channel *channel) {
 void Server::listen_client_handler(User *user) {
   while (true) {
     string message = util::recv(user->get_socket());
-    string username_safe = user->get_name() == "" ? "new user" : user->get_name();
+    string username_safe =
+        user->get_name() == "" ? "new user" : user->get_name();
 
     log("Received message from " + username_safe);
 
@@ -220,6 +217,20 @@ void Server::listen_client_handler(User *user) {
       send(user, SIG_SUCCESS);
       send(user, JOIN_CMD);
       send(user, greetings);
+
+      continue;
+    } else if (util::starts_with(message, FILE_CMD)) {
+      string contents = util::get_cmd_target(message, FILE_CMD);
+
+      log("Received a file with " + to_string(contents.size()) + " bytes from " + user->get_name());
+
+      send(user, SIG_SUCCESS);
+      send(user, FILE_CMD);
+      send(user, "File successfully sent.");
+
+      log("Sending " + user->get_name() + " to users in " + user->channel->get_name());
+
+      user->send_file(contents);
 
       continue;
     } else if (message == PING_CMD) {

@@ -24,24 +24,28 @@ bool User::set_name(string name) {
   return true;
 }
 
-string User::get_name() {
-  return name;
-}
+string User::get_name() { return name; }
 
-void User::send(string message) {
+void User::send(string signal, string message) {
   if (is_mute()) {
     return;
   }
 
   auto users = channel->get_members();
+  auto send_fn = signal != SIG_FILE ? util::send : util::send_without_filtering;
+
   for (auto &user : users) {
     if (user != this) {
-      util::send(user->get_socket(), SIG_MESSSAGE);
-      util::send(user->get_socket(), this->get_name());
-      util::send(user->get_socket(), message);
+      send_fn(user->get_socket(), signal);
+      send_fn(user->get_socket(), this->get_name());
+      send_fn(user->get_socket(), message);
     }
   }
 }
+
+void User::send(string message) { send(SIG_MESSSAGE, message); }
+
+void User::send_file(string contents) { send(SIG_FILE, contents); }
 
 void User::mute() { muted = true; }
 
