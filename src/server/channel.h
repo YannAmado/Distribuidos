@@ -16,15 +16,17 @@ private:
   User *admin;
   unordered_map<string, User *> members;
   mutex members_mtx;
+  string name;
 
 public:
-  string name;
 
   Channel(string name, User *admin);
 
   vector<User *> get_members();
   User *get_admin();
   void broadcast(string message);
+  bool set_name(string name);
+  string get_name();
   /**
    * Add a new member to the channel.
    * @param user the user to be added
@@ -33,6 +35,7 @@ public:
    */
   bool add_member(User *user);
   void remove_member(User *user);
+  User *get_member(string name);
 };
 
 #endif

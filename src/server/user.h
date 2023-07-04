@@ -13,9 +13,9 @@ class User {
 private:
   bool muted;
   int socket;
+  string name;
 
 public:
-  string name;
   thread thr;
   Channel *channel;
   string ip;
@@ -27,6 +27,8 @@ public:
   void unmute();
   bool is_mute();
   int get_socket();
+  bool set_name(string name);
+  string get_name();
 
   bool operator==(const User &user);
   bool operator!=(const User &user);

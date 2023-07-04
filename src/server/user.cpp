@@ -7,12 +7,25 @@
 using namespace std;
 
 User::User(int socket, string ip) {
-  if (!util::is_name_valid(name)) {
-    throw "User name is invalid.";
-  }
-
+  this->muted = false;
   this->socket = socket;
   this->ip = ip;
+  this->name = "";
+  this->channel = nullptr;
+}
+
+bool User::set_name(string name) {
+  if (!util::is_name_valid(name)) {
+    this->name = "";
+    return false;
+  }
+
+  this->name = name;
+  return true;
+}
+
+string User::get_name() {
+  return name;
 }
 
 void User::send(string message) {
@@ -23,19 +36,21 @@ void User::send(string message) {
   auto users = channel->get_members();
   for (auto &user : users) {
     if (user != this) {
+      util::send(user->get_socket(), SIG_MESSSAGE);
+      util::send(user->get_socket(), this->get_name());
       util::send(user->get_socket(), message);
     }
   }
 }
 
-void User::mute() { this->muted = true; }
+void User::mute() { muted = true; }
 
-void User::unmute() { this->muted = false; }
+void User::unmute() { muted = false; }
 
-bool User::is_mute() { return this->muted; }
+bool User::is_mute() { return muted; }
 
 int User::get_socket() { return socket; }
 
-bool User::operator==(const User &user) { return this->name == user.name; };
+bool User::operator==(const User &user) { return name == user.name; };
 
-bool User::operator!=(const User &user) { return this->name != user.name; };
+bool User::operator!=(const User &user) { return name != user.name; };
