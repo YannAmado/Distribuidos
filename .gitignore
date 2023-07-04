@@ -1,3 +1,5 @@
-*.o
-server
-client
+/*.o
+**/*.o
+/server
+/client
+/Downloads/
