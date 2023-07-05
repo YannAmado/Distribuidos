@@ -26,6 +26,7 @@ Depois, basta dar os comandos make e depois run de seus respectivos.
 * /join nomeCanal - Entra no canal;
 * /quit ou Ctrl+D - O cliente fecha a conexão e fecha a aplicação;
 * /ping - O servidor retorna "pong"assim que receber a mensagem.
+* /file caminhoParaArquivo - Envia arquivo no canal
 
 ## Comandos apenas para administradores de canais:
 
